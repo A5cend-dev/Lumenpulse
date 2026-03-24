@@ -19,4 +19,5 @@ pub enum CrowdfundError {
     ProjectNotCancellable = 13,
     RefundFailed = 14,
     ContractNotPaused = 15,
+    YieldProviderNotFound = 16,
 }
