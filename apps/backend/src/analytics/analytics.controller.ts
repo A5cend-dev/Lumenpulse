@@ -21,7 +21,7 @@ export class AnalyticsController {
     type: ChartDataPointDto,
     isArray: true,
   })
-  async getChartData(@Query() query: ChartDataQueryDto) {
+  async getChartData(@Query() query: ChartDataQueryDto): Promise<ChartDataPointDto[]> {
     return this.analyticsService.getChartData(query);
   }
 }

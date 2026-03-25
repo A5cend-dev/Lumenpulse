@@ -1,6 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { ChartDataQueryDto, ChartInterval, ChartRange } from './dto/chart-data.dto';
+import { ChartDataPointDto, ChartDataQueryDto, ChartInterval, ChartRange } from './dto/chart-data.dto';
+
+interface HourlyRow {
+  bucket: Date;
+  sentiment: number;
+  count: number;
+}
+
+interface DailyRow {
+  bucket: Date;
+  sentiment: number;
+  count: number;
+}
 
 @Injectable()
 export class AnalyticsService {
@@ -8,7 +20,7 @@ export class AnalyticsService {
 
   constructor(private readonly dataSource: DataSource) {}
 
-  async getChartData(query: ChartDataQueryDto) {
+  async getChartData(query: ChartDataQueryDto): Promise<ChartDataPointDto[]> {
     const { interval, range, asset } = query;
     const since = this.getStartDate(range);
 
@@ -23,7 +35,7 @@ export class AnalyticsService {
     }
   }
 
-  private async getHourlyChartData(since: Date, asset?: string) {
+  private async getHourlyChartData(since: Date, asset?: string): Promise<ChartDataPointDto[]> {
     // news_insights table has analyzed_at and sentiment_score
     // Group by hour using date_trunc
     const sql = `
@@ -38,16 +50,16 @@ export class AnalyticsService {
       ORDER BY bucket ASC
     `;
 
-    const results = await this.dataSource.query(sql, [since, asset || null]);
+    const results: HourlyRow[] = await this.dataSource.query(sql, [since, asset || null]);
     
-    return results.map(row => ({
+    return results.map((row: HourlyRow) => ({
       timestamp: row.bucket.toISOString(),
       sentiment: row.sentiment,
       count: row.count,
     }));
   }
 
-  private async getDailyChartData(since: Date, asset?: string) {
+  private async getDailyChartData(since: Date, asset?: string): Promise<ChartDataPointDto[]> {
     // daily_snapshots table has snapshot_date, avg_sentiment, signal_count
     // It already has a global row (asset_symbol IS NULL) for each day
     const sql = `
@@ -64,9 +76,9 @@ export class AnalyticsService {
       ORDER BY bucket ASC
     `;
 
-    const results = await this.dataSource.query(sql, [since, asset || null]);
+    const results: DailyRow[] = await this.dataSource.query(sql, [since, asset || null]);
 
-    return results.map(row => ({
+    return results.map((row: DailyRow) => ({
       timestamp: row.bucket.toISOString(),
       sentiment: row.sentiment,
       count: row.count,
