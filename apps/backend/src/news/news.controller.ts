@@ -5,6 +5,7 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -13,6 +14,8 @@ import {
   ApiParam,
   ApiResponse,
 } from '@nestjs/swagger';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
+import { NEWS_CACHE_KEY } from '../cache/cache.service';
 import { NewsProviderService } from './news-provider.service';
 import { NewsService } from './news.service';
 import {
@@ -32,6 +35,9 @@ export class NewsController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(CacheInterceptor)
+  @CacheKey(NEWS_CACHE_KEY)
+  @CacheTTL(300_000)
   @ApiOperation({ summary: 'Get latest crypto news articles' })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
   @ApiQuery({ name: 'lang', required: false, type: String, example: 'EN' })

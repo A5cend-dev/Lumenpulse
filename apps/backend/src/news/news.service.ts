@@ -7,6 +7,7 @@ import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { NewsProviderService } from './news-provider.service';
 import { NewsArticleDto } from './dto/news-article.dto';
+import { CacheService } from '../cache/cache.service';
 
 interface RawOverallResult {
   average: string | null;
@@ -27,11 +28,14 @@ export class NewsService {
     @InjectRepository(News)
     private newsRepository: Repository<News>,
     private readonly newsProviderService: NewsProviderService,
+    private readonly cacheService: CacheService,
   ) {}
 
   async create(createArticleDto: CreateArticleDto): Promise<News> {
     const news = this.newsRepository.create(createArticleDto);
-    return this.newsRepository.save(news);
+    const saved = await this.newsRepository.save(news);
+    await this.cacheService.invalidateNewsCache();
+    return saved;
   }
 
   async findAll(): Promise<News[]> {
@@ -53,6 +57,7 @@ export class NewsService {
     updateArticleDto: UpdateArticleDto,
   ): Promise<News | null> {
     await this.newsRepository.update(id, updateArticleDto);
+    await this.cacheService.invalidateNewsCache();
     return this.findOne(id);
   }
 
@@ -179,6 +184,10 @@ export class NewsService {
       this.logger.log(
         `News fetch completed. Fetched ${articles.length} articles, ${newCount} new, ${skippedCount} duplicates skipped.`,
       );
+
+      if (newCount > 0) {
+        await this.cacheService.invalidateNewsCache();
+      }
     } catch (error) {
       this.logger.error(
         `Failed to fetch and save articles: ${error instanceof Error ? error.message : 'Unknown error'}`,
