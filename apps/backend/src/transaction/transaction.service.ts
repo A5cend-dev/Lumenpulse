@@ -188,7 +188,8 @@ export class TransactionService {
 
     const amount = this.getAmountFromOperation(operation);
     const assetCode = this.getAssetCode(operation);
-    const from = operation.source_account || operation.from || operation.funder || '';
+    const from =
+      operation.source_account || operation.from || operation.funder || '';
     const to = operation.to || operation.into || operation.account || '';
 
     const dto: TransactionDto = {
@@ -206,7 +207,15 @@ export class TransactionService {
       transactionHash: transaction.id,
       memo: transaction.memo,
       fee: transaction.fee_charged,
-      description: this.buildDescription(operation, type, amount, assetCode, publicKey, from, to),
+      description: this.buildDescription(
+        operation,
+        type,
+        amount,
+        assetCode,
+        publicKey,
+        from,
+        to,
+      ),
     };
 
     return dto;
@@ -257,18 +266,20 @@ export class TransactionService {
         return `Received ${amount} ${assetCode} from ${short(from)}`;
 
       case TransactionType.SWAP: {
-        const selling = operation.selling_asset_type === 'native'
-          ? 'XLM'
-          : (operation.selling_asset_code as string) || 'unknown';
-        const buying = operation.buying_asset_type === 'native'
-          ? 'XLM'
-          : (operation.buying_asset_code as string) || 'unknown';
+        const selling =
+          operation.selling_asset_type === 'native'
+            ? 'XLM'
+            : (operation.selling_asset_code as string) || 'unknown';
+        const buying =
+          operation.buying_asset_type === 'native'
+            ? 'XLM'
+            : (operation.buying_asset_code as string) || 'unknown';
         return `Swapped ${amount} ${selling} for ${buying}`;
       }
 
       case TransactionType.TRUSTLINE: {
         const asset = assetCode !== 'XLM' ? assetCode : 'asset';
-        const limit = operation.limit as string | undefined;
+        const limit = operation.limit;
         if (limit === '0') {
           return `Removed trustline for ${asset}`;
         }
@@ -285,7 +296,7 @@ export class TransactionService {
         return `Received inflation payout of ${amount} XLM`;
 
       default:
-        return `${type} operation`;
+        return `${String(type)} operation`;
     }
   }
 
